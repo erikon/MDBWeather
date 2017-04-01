@@ -10,6 +10,8 @@ import java.util.TimeZone;
 
 public class Utils {
 
+    public static final char DEGREE_SYMBOL = (char) 0x00B0;
+
     static String convertStreamToString(java.io.InputStream is) {
         java.util.Scanner s = new java.util.Scanner(is).useDelimiter("\\A");
         return s.hasNext() ? s.next() : "";

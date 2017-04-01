@@ -134,9 +134,6 @@ public class MainActivity extends AppCompatActivity {
         private static TextView current_rain;
         private static TextView poweredBy;
 
-        public PlaceholderFragment() {
-        }
-
         public static PlaceholderFragment newInstance(int sectionNumber) {
             PlaceholderFragment fragment = new PlaceholderFragment();
             Bundle args = new Bundle();
@@ -162,106 +159,6 @@ public class MainActivity extends AppCompatActivity {
             final View rootView;
 
             switch (position){
-                case 1:
-                    rootView = inflater.inflate(R.layout.fragment_main, container, false);
-                    cityNameView = (TextView) rootView.findViewById(R.id.city_name);
-                    current_time = (TextView) rootView.findViewById(R.id.current_time);
-                    current_temp = (TextView) rootView.findViewById(R.id.current_temp);
-                    current_summary = (TextView) rootView.findViewById(R.id.current_summary);
-                    current_date = (TextView) rootView.findViewById(R.id.current_date);
-                    current_rain = (TextView) rootView.findViewById(R.id.current_rain);
-                    poweredBy = (TextView) rootView.findViewById(R.id.poweredBy);
-
-                    poweredBy.setText(getString(R.string.powered_by));
-                    poweredBy.setOnClickListener(this);
-
-                    CountDownTimer newTimer = new CountDownTimer(2000000000, 1000) {
-                        public void onTick(long millisUntilFinished) {
-                            Calendar c = Calendar.getInstance();
-                            int am_pm =c.get(Calendar.AM_PM);
-                            if (c.get(Calendar.MINUTE) < 10){
-                                if (am_pm == Calendar.AM){
-                                    current_time.setText(c.get(Calendar.HOUR)+":0"+c.get(Calendar.MINUTE)+":"+c.get(Calendar.SECOND) + " " + getString(R.string.am));
-                                } else {
-                                    current_time.setText(c.get(Calendar.HOUR)+":0"+c.get(Calendar.MINUTE)+":"+c.get(Calendar.SECOND) + " " + getString(R.string.pm));
-                                }
-                            } else {
-                                if (am_pm == Calendar.AM){
-                                    current_time.setText(c.get(Calendar.HOUR)+":"+c.get(Calendar.MINUTE)+":"+c.get(Calendar.SECOND) + " " + getString(R.string.am));
-                                } else {
-                                    current_time.setText(c.get(Calendar.HOUR)+":"+c.get(Calendar.MINUTE)+":"+c.get(Calendar.SECOND) + " " + getString(R.string.pm));
-                                }
-                            }
-                        }
-                        public void onFinish() {}
-                    };
-                    newTimer.start();
-
-                    new AsyncTask<Void, Void, JSONObject>() {
-                        protected JSONObject doInBackground(Void... voids) {
-                            try {
-                                String str_lat = Double.toString(latitude);
-                                String str_lon = Double.toString(longitude);
-                                URL url = new URL( getString(R.string.darksky_api_key) + str_lat + "," + str_lon);
-                                Log.i(getString(R.string.location_log), str_lat + ", " + str_lon);
-                                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                                conn.setRequestMethod(getString(R.string.request_get));
-                                InputStream in = new BufferedInputStream(conn.getInputStream());
-                                String response = Utils.convertStreamToString(in);
-                                JSONObject json = new JSONObject(response);
-
-                                return json;
-                            }
-                            catch (Exception e) {return null;}
-                        }
-
-                        protected void onPostExecute(JSONObject json) {
-                            try {
-
-                                Geocoder gcd = new Geocoder(getContext(), Locale.getDefault());
-                                List<Address> addresses = gcd.getFromLocation(latitude, longitude, 1);
-                                if (addresses.size() > 0) {
-                                    cityNameView.setText(addresses.get(0).getLocality());
-                                }
-                                else {
-                                    cityNameView.setText(getString(R.string.city_not_found));
-                                }
-                                JSONObject current_weather = json.getJSONObject(getString(R.string.json_currently));
-                                JSONObject hourly_weather = json.getJSONObject(getString(R.string.json_hourly));
-                                JSONObject minutely_weather = json.getJSONObject(getString(R.string.json_minutely));
-
-                                long time = current_weather.getLong(getString(R.string.json_currently_time));
-                                temp = (int)(current_weather.getDouble(getString(R.string.json_currently_temp)));
-                                summary = hourly_weather.getString(getString(R.string.json_hourly_summary));
-
-                                JSONArray minutely_array = minutely_weather.getJSONArray(getString(R.string.json_minutely_data));
-                                int minutely_array_len = minutely_array.length();
-                                for(int i = 0; i < minutely_array_len; i++){
-                                    JSONObject minute = minutely_array.getJSONObject(i);
-                                    double rain_minute = minute.getDouble(getString(R.string.json_minutely_array_precipProb));
-                                    if(rain_minute > 0){
-                                        String rain_time = Utils.epocToDateWithTime(minute.getLong(getString(R.string.json_minutely_array_time)));
-                                        String precip_type = minute.getString(getString(R.string.json_minutely_array_precipType));
-                                        current_rain.setText("Incoming " + precip_type + " around " + rain_time);
-                                        break;
-                                    } else {
-                                        current_rain.setText(getString(R.string.no_rain));
-                                    }
-                                }
-
-                                String date = Utils.epocToDate(time);
-
-                                current_date.setText(date);
-                                current_temp.setText(Integer.toString(temp) + (char)0x00B0 + " F");
-                                current_summary.setText(summary.substring(0, summary.length() - 1));
-
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    }.execute();
-                    return rootView;
-
                 case 2:
                     rootView = inflater.inflate(R.layout.fragment_hours, container, false);
                     RecyclerView recyclerView2 = (RecyclerView) rootView.findViewById(R.id.recyclerView2);
@@ -277,8 +174,124 @@ public class MainActivity extends AppCompatActivity {
                     recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
                     recyclerView.setAdapter(adapter);
                     return rootView;
+
+                default:
+                    rootView = inflater.inflate(R.layout.fragment_main, container, false);
+                    instantiateViews(rootView);
+
+                    CountDownTimer newTimer = createTimer(2000000000);
+                    newTimer.start();
+
+                    AsyncTask<Void, Void, JSONObject> apiCalls = getData();
+                    apiCalls.execute();
+
+                    return rootView;
             }
-            return null;
+        }
+
+        private void instantiateViews(View v){
+            cityNameView = (TextView) v.findViewById(R.id.city_name);
+            current_time = (TextView) v.findViewById(R.id.current_time);
+            current_temp = (TextView) v.findViewById(R.id.current_temp);
+            current_summary = (TextView) v.findViewById(R.id.current_summary);
+            current_date = (TextView) v.findViewById(R.id.current_date);
+            current_rain = (TextView) v.findViewById(R.id.current_rain);
+            poweredBy = (TextView) v.findViewById(R.id.poweredBy);
+
+            poweredBy.setText(getString(R.string.powered_by));
+            poweredBy.setOnClickListener(this);
+        }
+
+        private CountDownTimer createTimer(long duration){
+            CountDownTimer newTimer = new CountDownTimer(duration, 1000) {
+                public void onTick(long millisUntilFinished) {
+                    Calendar c = Calendar.getInstance();
+                    int am_pm =c.get(Calendar.AM_PM);
+                    if (c.get(Calendar.MINUTE) < 10){
+                        if (am_pm == Calendar.AM){
+                            current_time.setText(c.get(Calendar.HOUR)+":0"+c.get(Calendar.MINUTE)+":"+c.get(Calendar.SECOND) + " " + getString(R.string.am));
+                        } else {
+                            current_time.setText(c.get(Calendar.HOUR)+":0"+c.get(Calendar.MINUTE)+":"+c.get(Calendar.SECOND) + " " + getString(R.string.pm));
+                        }
+                    } else {
+                        if (am_pm == Calendar.AM){
+                            current_time.setText(c.get(Calendar.HOUR)+":"+c.get(Calendar.MINUTE)+":"+c.get(Calendar.SECOND) + " " + getString(R.string.am));
+                        } else {
+                            current_time.setText(c.get(Calendar.HOUR)+":"+c.get(Calendar.MINUTE)+":"+c.get(Calendar.SECOND) + " " + getString(R.string.pm));
+                        }
+                    }
+                }
+                public void onFinish() {}
+            };
+            return newTimer;
+        }
+
+        private AsyncTask<Void, Void, JSONObject> getData(){
+            AsyncTask<Void, Void, JSONObject> at = new AsyncTask<Void, Void, JSONObject>() {
+                protected JSONObject doInBackground(Void... voids) {
+                    try {
+                        String str_lat = Double.toString(latitude);
+                        String str_lon = Double.toString(longitude);
+                        URL url = new URL( getString(R.string.darksky_api_key) + str_lat + "," + str_lon);
+                        Log.i(getString(R.string.location_log), str_lat + ", " + str_lon);
+                        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                        conn.setRequestMethod(getString(R.string.request_get));
+                        InputStream in = new BufferedInputStream(conn.getInputStream());
+                        String response = Utils.convertStreamToString(in);
+                        JSONObject json = new JSONObject(response);
+
+                        return json;
+                    }
+                    catch (Exception e) {return null;}
+                }
+
+                protected void onPostExecute(JSONObject json) {
+                    try {
+
+                        Geocoder gcd = new Geocoder(getContext(), Locale.getDefault());
+                        List<Address> addresses = gcd.getFromLocation(latitude, longitude, 1);
+                        if (addresses.size() > 0) {
+                            cityNameView.setText(addresses.get(0).getLocality());
+                        }
+                        else {
+                            cityNameView.setText(getString(R.string.city_not_found));
+                        }
+                        JSONObject current_weather = json.getJSONObject(getString(R.string.json_currently));
+                        JSONObject hourly_weather = json.getJSONObject(getString(R.string.json_hourly));
+                        JSONObject minutely_weather = json.getJSONObject(getString(R.string.json_minutely));
+
+                        long time = current_weather.getLong(getString(R.string.json_currently_time));
+                        temp = (int)(current_weather.getDouble(getString(R.string.json_currently_temp)));
+                        summary = hourly_weather.getString(getString(R.string.json_hourly_summary));
+
+                        JSONArray minutely_array = minutely_weather.getJSONArray(getString(R.string.json_minutely_data));
+                        int minutely_array_len = minutely_array.length();
+                        for(int i = 0; i < minutely_array_len; i++){
+                            JSONObject minute = minutely_array.getJSONObject(i);
+                            double rain_minute = minute.getDouble(getString(R.string.json_minutely_array_precipProb));
+                            if(rain_minute > 0){
+                                String rain_time = Utils.epocToDateWithTime(minute.getLong(getString(R.string.json_minutely_array_time)));
+                                String precip_type = minute.getString(getString(R.string.json_minutely_array_precipType));
+                                current_rain.setText("Incoming " + precip_type + " around " + rain_time);
+                                break;
+                            } else {
+                                current_rain.setText(getString(R.string.no_rain));
+                            }
+                        }
+
+                        String date = Utils.epocToDate(time);
+
+                        current_date.setText(date);
+                        current_temp.setText(Integer.toString(temp) + Utils.DEGREE_SYMBOL + " F");
+                        current_summary.setText(summary.substring(0, summary.length() - 1));
+
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            };
+
+            return at;
         }
     }
 

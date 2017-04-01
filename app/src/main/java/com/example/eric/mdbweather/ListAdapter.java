@@ -99,7 +99,7 @@ public class ListAdapter extends RecyclerView.Adapter<ListAdapter.CustomViewHold
     @Override
     public void onBindViewHolder(CustomViewHolder holder, int position) {
         holder.dayDate.setText(dayDateArray.get(position));
-        holder.dayTemp.setText(Integer.toString(daytempArray.get(position)) + (char)0x00B0 + " F");
+        holder.dayTemp.setText(Integer.toString(daytempArray.get(position)) + Utils.DEGREE_SYMBOL + " F");
         holder.daySummary.setText(daySummaryArray.get(position));
     }
 

@@ -97,7 +97,7 @@ public class ListAdapterHours  extends RecyclerView.Adapter<ListAdapterHours.Cus
     @Override
     public void onBindViewHolder(ListAdapterHours.CustomViewHolder holder, int position) {
         holder.hourTime.setText(hoursTimeArray.get(position));
-        holder.hourTemp.setText(Integer.toString(hourstempArray.get(position)) + (char)0x00B0 + " F");
+        holder.hourTemp.setText(Integer.toString(hourstempArray.get(position)) + Utils.DEGREE_SYMBOL + " F");
         holder.hourSummary.setText(hoursSummaryArray.get(position));
     }
 
