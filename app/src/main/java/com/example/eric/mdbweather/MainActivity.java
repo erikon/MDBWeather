@@ -28,6 +28,8 @@ import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import org.json.JSONArray;
@@ -134,6 +136,8 @@ public class MainActivity extends AppCompatActivity {
         private static TextView current_rain;
         private static TextView poweredBy;
 
+        private static RelativeLayout skycon_image;
+
         public static PlaceholderFragment newInstance(int sectionNumber) {
             PlaceholderFragment fragment = new PlaceholderFragment();
             Bundle args = new Bundle();
@@ -179,6 +183,7 @@ public class MainActivity extends AppCompatActivity {
                     rootView = inflater.inflate(R.layout.fragment_main, container, false);
                     instantiateViews(rootView);
 
+
                     CountDownTimer newTimer = createTimer(2000000000);
                     newTimer.start();
 
@@ -197,6 +202,8 @@ public class MainActivity extends AppCompatActivity {
             current_date = (TextView) v.findViewById(R.id.current_date);
             current_rain = (TextView) v.findViewById(R.id.current_rain);
             poweredBy = (TextView) v.findViewById(R.id.poweredBy);
+
+            skycon_image = (RelativeLayout) v.findViewById(R.id.skycon_image);
 
             poweredBy.setText(getString(R.string.powered_by));
             poweredBy.setOnClickListener(this);
@@ -284,6 +291,9 @@ public class MainActivity extends AppCompatActivity {
                         current_date.setText(date);
                         current_temp.setText(Integer.toString(temp) + Utils.DEGREE_SYMBOL + " F");
                         current_summary.setText(summary.substring(0, summary.length() - 1));
+
+                        String skycon_image_code = current_weather.getString("icon");
+                        Utils.setSkyconImage(skycon_image_code, skycon_image, getContext());
 
                     } catch (Exception e) {
                         e.printStackTrace();
